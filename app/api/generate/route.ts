@@ -335,8 +335,21 @@ Generate a blog post that sounds like a real person wrote it and would actually 
     // Generate image
     let imageUrl: string | null = null
     try {
+      // Construct the base URL for internal API calls
+      let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+
+      if (!baseUrl && process.env.VERCEL_URL) {
+        // On Vercel, use VERCEL_URL if NEXT_PUBLIC_BASE_URL is not set
+        baseUrl = `https://${process.env.VERCEL_URL}`
+      }
+
+      if (!baseUrl) {
+        // Fallback for local development
+        baseUrl = 'http://localhost:3000'
+      }
+
       const imageResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/generate-image`,
+        `${baseUrl}/api/generate-image`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

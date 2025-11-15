@@ -1,8 +1,11 @@
 import { getAllBlogs } from '@/lib/firestore-blogs'
+import { NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1', 10)
     const limit = parseInt(searchParams.get('limit') || '12', 10)
     const search = searchParams.get('search') || ''
