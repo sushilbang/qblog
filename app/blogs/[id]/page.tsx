@@ -6,6 +6,7 @@ import { MarkdownRenderer } from '@/components/MarkdownRenderer'
 import { ImageBanner } from '@/components/ImageBanner'
 import { BlogEditor } from '@/components/BlogEditor'
 import { BlogFooter } from '@/components/BlogFooter'
+import { FunFactLoader } from '@/components/FunFactLoader'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
 import { ArrowLeft, Loader, Edit2 } from 'lucide-react'
 import Link from 'next/link'
@@ -212,25 +213,9 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
     )
   }
 
-  // Show full-screen loading state while blog is being generated
+  // Show fun fact loader while blog is being generated
   if (isGenerating) {
-    return (
-      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-1)', color: 'var(--fg-1)' }}>
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="relative w-16 h-16">
-            <div className="absolute inset-0 rounded-full border-4 border-[var(--bg-3)] border-t-[var(--accent)] animate-spin" />
-          </div>
-          <div>
-            <p className="text-xl font-semibold text-[var(--fg-1)]">
-              Creating your blog
-            </p>
-            <p className="text-sm text-[var(--fg-2)] mt-2">
-              This may take a moment...
-            </p>
-          </div>
-        </div>
-      </main>
-    )
+    return <FunFactLoader query={blog?.query} />
   }
 
   if (error || !blog) {

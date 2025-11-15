@@ -41,3 +41,6 @@ yarn-error.log*
 *.db
 *.sqlite
 prisma/dev.db
+
+# Claude Code
+.claude/
