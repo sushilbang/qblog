@@ -24,8 +24,14 @@ export async function POST(request: Request) {
     `.replace(/\n/g, ' ').trim()
 
     // Use Pollinations.ai - completely free, no authentication needed
-    // Add seed for consistency, model selection for quality
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1280&height=720&seed=${Math.random()}`
+    // Create a deterministic seed based on the prompt for consistency
+    let seed = 0
+    for (let i = 0; i < prompt.length; i++) {
+      seed += prompt.charCodeAt(i)
+    }
+    seed = Math.abs(seed % 1000000)
+
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1280&height=720&seed=${seed}`
 
     return new Response(
       JSON.stringify({ imageUrl }),

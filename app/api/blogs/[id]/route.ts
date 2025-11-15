@@ -1,5 +1,6 @@
 import { getBlog, updateBlog } from '@/lib/firestore-blogs'
 import { NextRequest } from 'next/server'
+import { adminAuth } from '@/lib/firebase-admin'
 
 export async function GET(
   request: NextRequest,
@@ -34,6 +35,46 @@ export async function PATCH(
   try {
     const { id } = params
     const body = await request.json()
+
+    // Get and verify the authorization token
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return Response.json(
+        { error: 'Unauthorized: Missing or invalid authorization header' },
+        { status: 401 }
+      )
+    }
+
+    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+    let userId: string
+
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token)
+      userId = decodedToken.uid
+    } catch (err) {
+      console.error('Token verification failed:', err)
+      return Response.json(
+        { error: 'Unauthorized: Invalid token' },
+        { status: 401 }
+      )
+    }
+
+    // Fetch the blog
+    const blog = await getBlog(id)
+    if (!blog) {
+      return Response.json(
+        { error: 'Blog not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check authorization - user must be the blog owner
+    if (blog.userId !== userId) {
+      return Response.json(
+        { error: 'Forbidden: You can only edit your own blogs' },
+        { status: 403 }
+      )
+    }
 
     // Allow updating imageUrl, content, and title
     const { imageUrl, content, title } = body
@@ -72,9 +113,9 @@ export async function PATCH(
       )
     }
 
-    const blog = await updateBlog(id, updateData)
+    const updatedBlog = await updateBlog(id, updateData)
 
-    return Response.json(blog)
+    return Response.json(updatedBlog)
   } catch (error) {
     console.error('Error updating blog:', error)
     return Response.json(

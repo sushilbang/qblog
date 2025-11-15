@@ -9,9 +9,12 @@ import { BlogFooter } from '@/components/BlogFooter'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
 import { ArrowLeft, Loader, Edit2 } from 'lucide-react'
 import Link from 'next/link'
+import { getAuth } from 'firebase/auth'
+import { useAuth } from '@/app/auth-context'
 
 interface Blog {
   id: string
+  userId: string | null
   title: string
   content: string
   query: string
@@ -29,6 +32,7 @@ interface BlogDetailPageProps {
 }
 
 export default function BlogDetailPage({ params }: BlogDetailPageProps) {
+  const { user } = useAuth()
   const [blog, setBlog] = useState<Blog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isGenerating, setIsGenerating] = useState(true)
@@ -152,9 +156,20 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
 
     setIsSaving(true)
     try {
-      const response = await fetch(`/api/blogs/${params.id}`, {
+      // Get Firebase token for authorization
+      const auth = getAuth()
+      let idToken: string | undefined
+
+      if (auth.currentUser) {
+        idToken = await auth.currentUser.getIdToken()
+      }
+
+      const response = await fetch(`/api/blogs/${blog.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken && { 'Authorization': `Bearer ${idToken}` })
+        },
         body: JSON.stringify({
           title: editTitle,
           content: editContent,
@@ -162,7 +177,8 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save changes')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save changes')
       }
 
       const updatedBlog = await response.json()
@@ -174,7 +190,7 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
       setTimeout(() => setSaveMessage(null), 3000)
     } catch (err) {
       console.error('Save error:', err)
-      setSaveMessage({ type: 'error', text: 'Failed to save changes. Please try again.' })
+      setSaveMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to save changes. Please try again.' })
     } finally {
       setIsSaving(false)
     }
@@ -289,16 +305,18 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
             />
           )}
 
-          {/* Edit Button */}
-          <div className="mb-8 flex justify-end">
-            <button
-              onClick={startEdit}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[var(--bg-2)] text-[var(--fg-1)] hover:bg-[var(--bg-3)] transition-colors"
-            >
-              <Edit2 className="w-4 h-4" />
-              Edit
-            </button>
-          </div>
+          {/* Edit Button - only show if user is the blog owner */}
+          {user && blog.userId === user.id && (
+            <div className="mb-8 flex justify-end">
+              <button
+                onClick={startEdit}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[var(--bg-2)] text-[var(--fg-1)] hover:bg-[var(--bg-3)] transition-colors"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit
+              </button>
+            </div>
+          )}
 
           {/* Content */}
           <div className="max-w-none">
