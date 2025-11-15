@@ -26,7 +26,7 @@ export default async function Home() {
       <header className="border-b border-[var(--border-1)] sticky top-0 bg-[var(--bg-1)] z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="text-2xl font-bold tracking-tight hover:opacity-70 transition-opacity">
-            qBlog
+            NeuralPost
           </Link>
           <ThemeSelector />
         </div>
@@ -37,10 +37,10 @@ export default async function Home() {
         {/* Hero Section */}
         <section className="mb-20 text-center max-w-3xl mx-auto">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight text-[var(--fg-1)]">
-            Create Blogs with AI
+            Blog Like a Boss with AI
           </h1>
           <p className="text-lg sm:text-xl text-[var(--fg-2)] mb-8">
-            Generate beautifully written, well-structured blog posts in seconds. Powered by advanced AI.
+            Snappy, stunning posts in seconds — because your ideas deserve swagger, not sweat.
           </p>
         </section>
 
@@ -80,7 +80,7 @@ export default async function Home() {
       {/* Footer */}
       <footer className="border-t border-[var(--border-1)] mt-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-[var(--fg-2)]">
-          <p>&copy; 2024 qBlog. Built with Next.js and Groq AI.</p>
+          <p>&copy; 2024 NeuralPost. Built with Next.js and Groq AI.</p>
         </div>
       </footer>
     </main>

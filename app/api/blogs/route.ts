@@ -9,13 +9,24 @@ export async function GET(request: Request) {
 
     const skip = (page - 1) * limit
 
-    let whereClause = {}
+    let whereClause: any = {
+      // Only include blogs that have been generated (not empty content)
+      content: { not: '' },
+      title: { not: 'Generating...' },
+    }
+
     if (search) {
       whereClause = {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { query: { contains: search, mode: 'insensitive' } },
-          { content: { contains: search, mode: 'insensitive' } },
+        AND: [
+          { content: { not: '' } },
+          { title: { not: 'Generating...' } },
+          {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' } },
+              { query: { contains: search, mode: 'insensitive' } },
+              { content: { contains: search, mode: 'insensitive' } },
+            ],
+          },
         ],
       }
     }

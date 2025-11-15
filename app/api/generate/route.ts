@@ -52,6 +52,67 @@ export async function POST(request: Request) {
       )
     }
 
+    const ipAddress = getIpAddress()
+    const userAgent = getUserAgent()
+
+    // Create blog record immediately with empty content
+    let blog
+    try {
+      blog = await prisma.blog.create({
+        data: {
+          title: 'Generating...',
+          content: '',
+          query,
+          ipAddress,
+          userAgent,
+          metadata: JSON.stringify({
+            contentLength: 0,
+            wordCount: 0,
+          }),
+        },
+      })
+    } catch (dbError) {
+      console.error('Database error:', dbError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create blog record' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Return blog ID immediately to client
+    const response = new Response(
+      JSON.stringify({ id: blog.id }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
+
+    // Generate content and image in background (fire and forget)
+    generateBlogContent(blog.id, query, ipAddress, userAgent).catch((error) => {
+      console.error('Background generation error:', error)
+    })
+
+    return response
+  } catch (error) {
+    console.error('API error:', error)
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error',
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+}
+
+// Background function to generate content and update blog
+async function generateBlogContent(
+  blogId: string,
+  query: string,
+  ipAddress: string | null,
+  userAgent: string | null
+) {
+  try {
     const systemPrompt = `You are an expert blog writer. Generate a well-structured, engaging blog post in markdown format based on the user's query.
 
 Requirements:
@@ -70,86 +131,82 @@ Requirements:
 
     // Create Groq client with OpenAI-compatible endpoint
     const groq = createOpenAI({
-      apiKey: process.env.GROQ_API_KEY,
+      apiKey: process.env.GROQ_API_KEY!,
       baseURL: 'https://api.groq.com/openai/v1',
+    })
+
+    const { textStream } = await streamText({
+      model: groq('llama-3.3-70b-versatile'),
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ],
+      temperature: 0.7,
+      maxTokens: 2000,
     })
 
     let fullContent = ''
 
-    // Create a readable stream that handles the streaming response
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const { textStream } = await streamText({
-            model: groq('llama-3.3-70b-versatile'),
-            system: systemPrompt,
-            messages: [
-              {
-                role: 'user',
-                content: userMessage,
-              },
-            ],
-            temperature: 0.7,
-            maxTokens: 2000,
-          })
+    // Collect all streamed content
+    for await (const chunk of textStream) {
+      fullContent += chunk
+    }
 
-          // Stream the text as it comes in
-          for await (const chunk of textStream) {
-            fullContent += chunk
-            const data = JSON.stringify({ content: chunk })
-            controller.enqueue(`data: ${data}\n\n`)
-          }
+    // Extract title from content
+    const title = extractTitleFromContent(fullContent)
 
-          // Save the blog to database
-          if (fullContent.trim()) {
-            const title = extractTitleFromContent(fullContent)
-            const ipAddress = getIpAddress()
-            const userAgent = getUserAgent()
-
-            try {
-              await prisma.blog.create({
-                data: {
-                  title,
-                  content: fullContent,
-                  query,
-                  ipAddress,
-                  userAgent,
-                  metadata: JSON.stringify({
-                    contentLength: fullContent.length,
-                    wordCount: fullContent.split(/\s+/).length,
-                  }),
-                },
-              })
-            } catch (dbError) {
-              console.error('Database error:', dbError)
-              // Continue even if database save fails
-            }
-          }
-
-          controller.close()
-        } catch (error) {
-          console.error('Streaming error:', error)
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-          controller.enqueue(`data: ${JSON.stringify({ error: errorMessage })}\n\n`)
-          controller.close()
+    // Generate image
+    let imageUrl: string | null = null
+    try {
+      const imageResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/generate-image`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: query }),
         }
-      },
-    })
+      )
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+      if (imageResponse.ok) {
+        const imageData = await imageResponse.json()
+        imageUrl = imageData.imageUrl
+      } else {
+        console.error('Failed to generate image:', imageResponse.statusText)
+      }
+    } catch (imageError) {
+      console.error('Image generation error:', imageError)
+      // Continue even if image generation fails
+    }
+
+    // Update blog with generated content and image
+    await prisma.blog.update({
+      where: { id: blogId },
+      data: {
+        title,
+        content: fullContent,
+        imageUrl,
+        metadata: JSON.stringify({
+          contentLength: fullContent.length,
+          wordCount: fullContent.split(/\s+/).length,
+        }),
       },
     })
   } catch (error) {
-    console.error('API error:', error)
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : 'Internal server error',
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    console.error('Background generation error:', error)
+    // Try to update blog with error message
+    try {
+      await prisma.blog.update({
+        where: { id: blogId },
+        data: {
+          title: 'Generation Failed',
+          content: 'Failed to generate blog content. Please try again.',
+        },
+      })
+    } catch (updateError) {
+      console.error('Failed to update blog with error:', updateError)
+    }
   }
 }

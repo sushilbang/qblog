@@ -79,7 +79,7 @@ export default function BlogsPage() {
       <header className="border-b border-black dark:border-white sticky top-0 bg-white dark:bg-black z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="text-2xl font-bold hover:opacity-80 transition-opacity">
-            qBlog
+            NeuralPost
           </Link>
           <ThemeToggle />
         </div>
@@ -200,7 +200,7 @@ export default function BlogsPage() {
       {/* Footer */}
       <footer className="border-t border-black dark:border-white mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm opacity-60">
-          <p>&copy; 2024 qBlog. Built with Next.js and Groq AI.</p>
+          <p>&copy; 2024 NeuralPost. Built with Next.js and Groq AI.</p>
         </div>
       </footer>
     </main>

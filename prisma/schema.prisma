@@ -15,6 +15,7 @@ model Blog {
   title     String
   content   String
   query     String
+  imageUrl  String?
   ipAddress String?
   userAgent String?
   createdAt DateTime   @default(now())
