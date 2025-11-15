@@ -1,55 +1,25 @@
-import { prisma } from '@/lib/db'
+import { getAllBlogs } from '@/lib/firestore-blogs'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1', 10)
-    const limit = parseInt(searchParams.get('limit') || '10', 10)
+    const limit = parseInt(searchParams.get('limit') || '12', 10)
     const search = searchParams.get('search') || ''
 
-    const skip = (page - 1) * limit
+    const offset = (page - 1) * limit
 
-    let whereClause: any = {
-      // Only include blogs that have been generated (not empty content)
-      content: { not: '' },
-      title: { not: 'Generating...' },
-    }
-
-    if (search) {
-      whereClause = {
-        AND: [
-          { content: { not: '' } },
-          { title: { not: 'Generating...' } },
-          {
-            OR: [
-              { title: { contains: search, mode: 'insensitive' } },
-              { query: { contains: search, mode: 'insensitive' } },
-              { content: { contains: search, mode: 'insensitive' } },
-            ],
-          },
-        ],
-      }
-    }
-
-    const [blogs, total] = await Promise.all([
-      prisma.blog.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          title: true,
-          content: true,
-          query: true,
-          createdAt: true,
-        },
-      }),
-      prisma.blog.count({ where: whereClause }),
-    ])
+    const { blogs, total } = await getAllBlogs(limit, offset, search || undefined)
 
     return Response.json({
-      blogs,
+      blogs: blogs.map((blog) => ({
+        id: blog.id,
+        title: blog.title,
+        content: blog.content,
+        query: blog.query,
+        createdAt: blog.createdAt,
+        imageUrl: blog.imageUrl,
+      })),
       pagination: {
         total,
         page,

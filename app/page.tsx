@@ -1,88 +1,101 @@
-import { ThemeSelector } from '@/components/ThemeSelector'
+'use client'
+
+import { useState } from 'react'
+import { NavMenu } from '@/components/NavMenu'
 import { BlogGenerator } from '@/components/BlogGenerator'
-import { BlogCard } from '@/components/BlogCard'
-import { prisma } from '@/lib/db'
+import { CustomPromptModal } from '@/components/CustomPromptModal'
+import { Footer } from '@/components/Footer'
 import Link from 'next/link'
 
-async function getRecentBlogs() {
-  try {
-    const blogs = await prisma.blog.findMany({
-      take: 3,
-      orderBy: { createdAt: 'desc' },
-    })
-    return blogs
-  } catch (error) {
-    console.error('Error fetching blogs:', error)
-    return []
-  }
-}
+const defaultSystemPrompt = `You are an expert blog writer who creates engaging, authentic, and reader-friendly content. Your writing feels natural, conversational, and genuinely helpful—never robotic or overly formal.
 
-export default async function Home() {
-  const recentBlogs = await getRecentBlogs()
+CORE WRITING PRINCIPLES:
+
+Voice & Tone:
+- Write like you're having a thoughtful conversation with a friend over coffee
+- Use natural language patterns: contractions, occasional sentence fragments for emphasis, varied sentence lengths
+- Be personable without being overly casual or unprofessional
+- Show personality and authentic voice—don't sound like a corporate press release
+- Use "you" to address readers directly and create connection
+
+Structure & Readability:
+- Start with a compelling hook that draws readers in within the first 2-3 sentences
+- Use short paragraphs (2-4 sentences) for easy scanning
+- Include descriptive subheadings that tell a story on their own
+- Break up text with transitional phrases and conversational asides
+- End with a memorable conclusion that reinforces your main point or includes a call-to-action
+
+Content Quality:
+- Lead with value—answer the reader's question or solve their problem early
+- Support claims with specific examples, data, or stories
+- Include practical takeaways readers can actually use
+- Anticipate and address common questions or objections
+- Balance being informative with being entertaining
+
+Human Touches:
+- Share relevant anecdotes or observations (real or illustrative)
+- Acknowledge nuance—avoid absolute statements when real life is messy
+- Use analogies and metaphors to clarify complex ideas
+- Include occasional rhetorical questions to engage readers
+- Show vulnerability or admit limitations when appropriate
+
+Language Style:
+- Vary sentence structure to create rhythm and flow
+- Use active voice predominantly (passive voice only when intentional)
+- Choose concrete, specific words over vague generalizations
+- Include sensory details when telling stories
+- Avoid jargon unless writing for a specialized audience (and define terms when you do)
+
+FORMATTING REQUIREMENTS:
+- Start with a compelling main title (h1)
+- Include an engaging introduction that hooks readers in the first 2-3 sentences
+- Use proper markdown headings (h2, h3) for sections with descriptive titles
+- Write comprehensive, well-spaced paragraphs
+- Include bullet points or numbered lists for practical takeaways
+- Add a memorable conclusion with a key takeaway or call-to-action
+- Use code blocks with syntax highlighting when relevant
+- Format the entire response as valid markdown
+
+WHAT TO AVOID:
+- Clichés and overused phrases ("at the end of the day," "game-changer")
+- Excessive buzzwords or marketing speak
+- Overly complex sentences that obscure meaning
+- Repetitive phrasing or redundant information
+- Condescending or preachy tone
+
+Generate a blog post that sounds like a real person wrote it and would actually engage readers.`
+
+export default function Home() {
+  const [isCustomPromptOpen, setIsCustomPromptOpen] = useState(false)
+  const [currentCustomPrompt, setCurrentCustomPrompt] = useState<string | undefined>()
 
   return (
-    <main className="min-h-screen bg-[var(--bg-1)] text-[var(--fg-1)]">
+    <main className="h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-1)', color: 'var(--fg-1)' }}>
       {/* Header */}
-      <header className="border-b border-[var(--border-1)] sticky top-0 bg-[var(--bg-1)] z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold tracking-tight hover:opacity-70 transition-opacity">
+      <header className="sticky top-0 z-50 px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Link href="/" className="text-2xl font-bold hover:opacity-70 transition-opacity" style={{ color: 'var(--fg-1)' }}>
             NeuralPost
           </Link>
-          <ThemeSelector />
+          <NavMenu onCustomPromptClick={() => setIsCustomPromptOpen(true)} />
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
-        {/* Hero Section */}
-        <section className="mb-20 text-center max-w-3xl mx-auto">
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight text-[var(--fg-1)]">
-            Blog Like a Boss with AI
-          </h1>
-          <p className="text-lg sm:text-xl text-[var(--fg-2)] mb-8">
-            Snappy, stunning posts in seconds — because your ideas deserve swagger, not sweat.
-          </p>
-        </section>
-
-        {/* Generator Section */}
-        <section className="mb-20">
-          <BlogGenerator />
-        </section>
-
-        {/* Recent Blogs Section */}
-        {recentBlogs.length > 0 && (
-          <section className="mt-32">
-            <div className="flex items-center justify-between mb-10">
-              <h2 className="text-3xl font-bold tracking-tight text-[var(--fg-1)]">Recently Generated</h2>
-              <Link
-                href="/blogs"
-                className="text-sm font-medium text-[var(--fg-2)] hover:text-[var(--fg-1)] transition-colors"
-              >
-                View all →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {recentBlogs.map((blog) => (
-                <BlogCard
-                  key={blog.id}
-                  id={blog.id}
-                  title={blog.title}
-                  content={blog.content}
-                  query={blog.query}
-                  createdAt={blog.createdAt}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+      {/* Main Content - Full Screen Height */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-4xl">
+          {/* Blog Generator - Clean minimal input */}
+          <BlogGenerator customPrompt={currentCustomPrompt} />
+        </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-[var(--border-1)] mt-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-[var(--fg-2)]">
-          <p>&copy; 2024 NeuralPost. Built with Next.js and Groq AI.</p>
-        </div>
-      </footer>
+      {/* Custom Prompt Modal */}
+      <CustomPromptModal
+        isOpen={isCustomPromptOpen}
+        onClose={() => setIsCustomPromptOpen(false)}
+        onSave={(prompt) => setCurrentCustomPrompt(prompt)}
+        defaultPrompt={defaultSystemPrompt}
+      />
     </main>
   )
 }

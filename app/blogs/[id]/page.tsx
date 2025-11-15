@@ -5,8 +5,9 @@ import { ThemeSelector } from '@/components/ThemeSelector'
 import { MarkdownRenderer } from '@/components/MarkdownRenderer'
 import { ImageBanner } from '@/components/ImageBanner'
 import { BlogEditor } from '@/components/BlogEditor'
+import { BlogFooter } from '@/components/BlogFooter'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
-import { Copy, Share2, ArrowLeft, Loader, Image as ImageIcon, Edit2 } from 'lucide-react'
+import { ArrowLeft, Loader, Edit2 } from 'lucide-react'
 import Link from 'next/link'
 
 interface Blog {
@@ -32,12 +33,12 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isGenerating, setIsGenerating] = useState(true)
   const [error, setError] = useState('')
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [isRegeneratingImage, setIsRegeneratingImage] = useState(false)
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null
@@ -104,40 +105,26 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
     }
   }
 
-  const generateImage = async () => {
+  const regenerateImage = async () => {
     if (!blog) return
 
-    setIsGeneratingImage(true)
+    setIsRegeneratingImage(true)
     try {
-      const response = await fetch('/api/generate-image', {
+      const response = await fetch(`/api/blogs/${blog.id}/regenerate-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: blog.query }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate image')
+        throw new Error('Failed to regenerate image')
       }
 
-      const data = await response.json()
-
-      // Update blog with new image
-      const updateResponse = await fetch(`/api/blogs/${params.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: data.imageUrl }),
-      })
-
-      if (updateResponse.ok) {
-        setBlog({ ...blog, imageUrl: data.imageUrl })
-      } else {
-        throw new Error('Failed to save image')
-      }
+      const updatedBlog = await response.json()
+      setBlog(updatedBlog)
     } catch (err) {
-      console.error('Image generation error:', err)
-      alert('Failed to generate image. Please try again.')
+      console.error('Error regenerating image:', err)
     } finally {
-      setIsGeneratingImage(false)
+      setIsRegeneratingImage(false)
     }
   }
 
@@ -292,50 +279,14 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Blog Header */}
         <article>
-          {/* Image Banner or Generate Button */}
-          {blog.imageUrl ? (
-            <div className="mb-8">
-              <ImageBanner
-                imageUrl={blog.imageUrl}
-                title={blog.title}
-                isLoading={isGeneratingImage}
-                onReload={generateImage}
-              />
-            </div>
-          ) : (
-            <div className="mb-8 p-8 rounded-lg border-2 border-dashed border-[var(--border-1)] flex flex-col items-center justify-center gap-4 text-center">
-              <ImageIcon className="w-12 h-12" style={{ color: 'var(--fg-2)' }} />
-              <div>
-                <p className="font-medium" style={{ color: 'var(--fg-1)' }}>
-                  No banner image yet
-                </p>
-                <p className="text-sm mt-1" style={{ color: 'var(--fg-2)' }}>
-                  Generate an AI image to make your blog more visually appealing
-                </p>
-              </div>
-              <button
-                onClick={generateImage}
-                disabled={isGeneratingImage}
-                className="mt-2 px-6 py-2 rounded-lg font-medium text-white transition-opacity flex items-center gap-2"
-                style={{
-                  backgroundColor: 'var(--accent)',
-                  opacity: isGeneratingImage ? 0.6 : 1,
-                  cursor: isGeneratingImage ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {isGeneratingImage ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="w-4 h-4" />
-                    Generate Banner
-                  </>
-                )}
-              </button>
-            </div>
+          {/* Image Banner */}
+          {blog.imageUrl && (
+            <ImageBanner
+              imageUrl={blog.imageUrl}
+              title={blog.title}
+              blogId={blog.id}
+              onRegenerate={regenerateImage}
+            />
           )}
 
           {/* Edit Button */}
@@ -354,42 +305,10 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
             <MarkdownRenderer content={blog.content} />
           </div>
         </article>
-
-        {/* Related Actions */}
-        <div className="mt-16 pt-8" style={{ borderTopColor: 'var(--border-1)', borderTopWidth: '1px' }}>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
-            <Link
-              href="/"
-              className="inline-block px-4 py-2 border rounded-lg text-center hover:opacity-80 transition-colors text-sm"
-              style={{
-                borderColor: 'var(--border-1)',
-                color: 'var(--fg-1)',
-                backgroundColor: 'var(--bg-2)'
-              }}
-            >
-              Generate New
-            </Link>
-            <Link
-              href="/blogs"
-              className="inline-block px-4 py-2 border rounded-lg text-center hover:opacity-80 transition-colors text-sm"
-              style={{
-                borderColor: 'var(--border-1)',
-                color: 'var(--fg-1)',
-                backgroundColor: 'var(--bg-2)'
-              }}
-            >
-              View All
-            </Link>
-          </div>
-        </div>
       </div>
 
       {/* Footer */}
-      <footer className="mt-16" style={{ borderTopColor: 'var(--border-1)', borderTopWidth: '1px', color: 'var(--fg-2)' }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm">
-          <p>&copy; 2024 NeuralPost. Built with Next.js and Groq AI.</p>
-        </div>
-      </footer>
+      <BlogFooter />
     </main>
   )
 }

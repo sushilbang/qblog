@@ -18,6 +18,8 @@
   --border-1: #cccccc;
   --accent: #487cff;
   --accent-light: #ebf1ff;
+  --button-bg: #1f2937;
+  --button-fg: #ffffff;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --radius: 4px;
   --radius-large: 12px;
@@ -33,6 +35,8 @@
   --border-1: #d4a574;
   --accent: #d4a574;
   --accent-light: #fff0e6;
+  --button-bg: #2d1f0f;
+  --button-fg: #ffffff;
 }
 
 /* Desert Oasis Theme */
@@ -45,6 +49,8 @@
   --border-1: #d4b89f;
   --accent: #b8956a;
   --accent-light: #fef0e6;
+  --button-bg: #3d2817;
+  --button-fg: #ffffff;
 }
 
 /* Ocean Blue Theme */
@@ -57,6 +63,8 @@
   --border-1: #8ab4f8;
   --accent: #487cff;
   --accent-light: #d4e4ff;
+  --button-bg: #0f2942;
+  --button-fg: #ffffff;
 }
 
 /* Forest Theme */
@@ -69,6 +77,8 @@
   --border-1: #7fb3a0;
   --accent: #2ecc71;
   --accent-light: #d4f1e8;
+  --button-bg: #0f3428;
+  --button-fg: #ffffff;
 }
 
 /* Sunset Theme */
@@ -81,6 +91,8 @@
   --border-1: #e8956a;
   --accent: #ff7043;
   --accent-light: #ffe6d0;
+  --button-bg: #4d1f0f;
+  --button-fg: #ffffff;
 }
 
 /* Midnight Theme */
@@ -93,6 +105,8 @@
   --border-1: #0f3460;
   --accent: #487cff;
   --accent-light: #1a2847;
+  --button-bg: #0d0e18;
+  --button-fg: #ffffff;
 }
 
 /* Grape Theme */
@@ -105,6 +119,8 @@
   --border-1: #b19cd9;
   --accent: #9b59b6;
   --accent-light: #f0e6ff;
+  --button-bg: #3d1e5c;
+  --button-fg: #ffffff;
 }
 
 html {
@@ -115,7 +131,7 @@ body {
   background-color: var(--bg-1);
   color: var(--fg-1);
   transition: background-color 0.4s ease, color 0.4s ease;
-  font-family: var(--font);
+  font-family: var(--font-inter, var(--font));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

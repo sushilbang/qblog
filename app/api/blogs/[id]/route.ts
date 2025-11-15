@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db'
+import { getBlog, updateBlog } from '@/lib/firestore-blogs'
 import { NextRequest } from 'next/server'
 
 export async function GET(
@@ -8,9 +8,7 @@ export async function GET(
   try {
     const { id } = params
 
-    const blog = await prisma.blog.findUnique({
-      where: { id },
-    })
+    const blog = await getBlog(id)
 
     if (!blog) {
       return Response.json(
@@ -74,10 +72,7 @@ export async function PATCH(
       )
     }
 
-    const blog = await prisma.blog.update({
-      where: { id },
-      data: updateData,
-    })
+    const blog = await updateBlog(id, updateData)
 
     return Response.json(blog)
   } catch (error) {

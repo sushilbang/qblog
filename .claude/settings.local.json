@@ -8,7 +8,11 @@
       "Bash(npx prisma migrate:*)",
       "Bash(set DATABASE_URL=file:./prisma/dev.db)",
       "Bash(npm run build:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(if [ -d \"C:\\Users\\sushi\\desktop\\qBlog\\prisma\" ])",
+      "Bash(then rm -rf \"C:\\Users\\sushi\\desktop\\qBlog\\prisma\")",
+      "Bash(else echo \"Prisma directory does not exist\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []
