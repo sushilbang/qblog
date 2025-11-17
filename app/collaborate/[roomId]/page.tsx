@@ -20,7 +20,7 @@ interface CollaboratePageProps {
 }
 
 export default function CollaboratePage({ params, searchParams }: CollaboratePageProps) {
-  const { user, loading } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
   const [isClient, setIsClient] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -53,14 +53,14 @@ export default function CollaboratePage({ params, searchParams }: CollaboratePag
 
   // Check if user is authenticated after loading is complete
   useEffect(() => {
-    if (!loading) {
+    if (!isLoading) {
       if (!user || !user.id) {
         setIsUnauthorized(true)
       } else {
         setIsUnauthorized(false)
       }
     }
-  }, [user, loading])
+  }, [user, isLoading])
 
   // Use relative coordinates from other users, adjusted for current scroll
   useEffect(() => {
@@ -261,7 +261,7 @@ export default function CollaboratePage({ params, searchParams }: CollaboratePag
   const wordCount = content.trim().split(/\s+/).length
   const charCount = content.length
 
-  if (!isClient || loading) {
+  if (!isClient || isLoading) {
     return null
   }
 
