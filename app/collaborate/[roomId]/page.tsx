@@ -25,6 +25,7 @@ export default function CollaboratePage({ params, searchParams }: CollaboratePag
   const [isClient, setIsClient] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [isUnauthorized, setIsUnauthorized] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [cursorCoords, setCursorCoords] = useState<Map<string, { x: number; y: number }>>(new Map())
   const blogId = searchParams?.blogId
@@ -48,7 +49,11 @@ export default function CollaboratePage({ params, searchParams }: CollaboratePag
   // Ensure we only render on client
   useEffect(() => {
     setIsClient(true)
-  }, [])
+    // Check if user is authenticated
+    if (!user || !user.id) {
+      setIsUnauthorized(true)
+    }
+  }, [user])
 
   // Use relative coordinates from other users, adjusted for current scroll
   useEffect(() => {
@@ -251,6 +256,23 @@ export default function CollaboratePage({ params, searchParams }: CollaboratePag
 
   if (!isClient) {
     return null
+  }
+
+  if (isUnauthorized) {
+    return (
+      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-1)', color: 'var(--fg-1)' }}>
+        <div className="text-center">
+          <p className="text-lg mb-4">You must be logged in to collaborate</p>
+          <button
+            onClick={() => router.push('/blogs')}
+            className="px-6 py-3 rounded-lg"
+            style={{ backgroundColor: 'var(--accent)', color: 'white' }}
+          >
+            Back to Blogs
+          </button>
+        </div>
+      </main>
+    )
   }
 
   if (error) {

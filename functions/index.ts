@@ -1,0 +1,1 @@
+export { cleanupEmptyRooms } from './cleanupEmptyRooms'

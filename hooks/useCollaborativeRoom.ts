@@ -106,11 +106,12 @@ export function useCollaborativeRoom(roomId: string, userId: string, userName: s
     unsubscribeRef.current = unsubscribe
 
     return () => {
-      // Remove user from connected users on unmount
+      // Remove user from connected users and clear cursor on unmount
       const removeUser = async () => {
         try {
           await updateDoc(roomRef, {
             connectedUsers: arrayRemove({ id: userId, name: userName }),
+            [`userCursors.${userId}`]: null,
             updatedAt: serverTimestamp(),
           })
         } catch (err) {
@@ -217,11 +218,24 @@ export function useCollaborativeRoom(roomId: string, userId: string, userName: s
     [roomId, userId, userName]
   )
 
-  const leaveRoom = useCallback(() => {
+  const leaveRoom = useCallback(async () => {
+    try {
+      const roomRef = doc(db, 'collaborativeRooms', roomId)
+
+      // Remove user from connected users and clear their cursor
+      await updateDoc(roomRef, {
+        connectedUsers: arrayRemove({ id: userId, name: userName }),
+        [`userCursors.${userId}`]: null,
+        updatedAt: serverTimestamp(),
+      })
+    } catch (err) {
+      console.error('Error leaving room:', err)
+    }
+
     if (unsubscribeRef.current) {
       unsubscribeRef.current()
     }
-  }, [])
+  }, [roomId, userId, userName])
 
   return {
     content,
