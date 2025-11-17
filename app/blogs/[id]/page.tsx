@@ -210,15 +210,23 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
       const response = await fetch(`/api/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blogId: blog.id })
+        body: JSON.stringify({
+          blogId: blog.id,
+          content: blog.content,
+          title: blog.title
+        })
       })
-      if (!response.ok) throw new Error('Failed to create room')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.details || 'Failed to create room')
+      }
       const { roomId } = await response.json()
       const shareLink = `${window.location.origin}/collaborate/${roomId}?blogId=${blog.id}`
       setRoomLink(shareLink)
       setShowRoomDialog(true)
     } catch (err) {
       console.error('Failed to create room:', err)
+      alert('Failed to create collaboration room. Please try again.')
     } finally {
       setIsCreatingRoom(false)
     }
