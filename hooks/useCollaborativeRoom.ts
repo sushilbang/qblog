@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { db } from '@/lib/firebase'
-import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc, arrayUnion, arrayRemove, getDoc, deleteDoc } from 'firebase/firestore'
 
 interface ConnectedUser {
   id: string
@@ -114,6 +114,16 @@ export function useCollaborativeRoom(roomId: string, userId: string, userName: s
             [`userCursors.${userId}`]: null,
             updatedAt: serverTimestamp(),
           })
+
+          // Delete room if now empty
+          const roomSnapshot = await getDoc(roomRef)
+          if (roomSnapshot.exists()) {
+            const roomData = roomSnapshot.data()
+            const connectedUsers = roomData.connectedUsers || []
+            if (connectedUsers.length === 0) {
+              await deleteDoc(roomRef)
+            }
+          }
         } catch (err) {
           console.error('Failed to remove user:', err)
         }
@@ -228,6 +238,17 @@ export function useCollaborativeRoom(roomId: string, userId: string, userName: s
         [`userCursors.${userId}`]: null,
         updatedAt: serverTimestamp(),
       })
+
+      // Check if room is now empty and delete it
+      const roomSnapshot = await getDoc(roomRef)
+      if (roomSnapshot.exists()) {
+        const roomData = roomSnapshot.data()
+        const connectedUsers = roomData.connectedUsers || []
+        if (connectedUsers.length === 0) {
+          // Delete the room if no users are connected
+          await deleteDoc(roomRef)
+        }
+      }
     } catch (err) {
       console.error('Error leaving room:', err)
     }

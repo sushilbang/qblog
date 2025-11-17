@@ -265,6 +265,12 @@ export default function CollaboratePage({ params, searchParams }: CollaboratePag
     return null
   }
 
+  // If room doesn't exist (error from hook), redirect
+  if (error && error.includes('not found')) {
+    router.push('/blogs')
+    return null
+  }
+
   if (isUnauthorized) {
     return (
       <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-1)', color: 'var(--fg-1)' }}>
