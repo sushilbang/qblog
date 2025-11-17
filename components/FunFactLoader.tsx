@@ -31,16 +31,8 @@ export function FunFactLoader({ query }: FunFactLoaderProps) {
   return (
     <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-1)', color: 'var(--fg-1)' }}>
       <div className="flex flex-col items-center gap-6 text-center max-w-lg px-6">
-        {/* Spinner */}
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 rounded-full border-4 border-[var(--bg-3)] border-t-[var(--accent)] animate-spin" />
-        </div>
-
         {/* Main Text */}
         <div>
-          <p className="text-xl font-semibold text-[var(--fg-1)]">
-            Creating your blog
-          </p>
           <p className="text-sm text-[var(--fg-2)] mt-2">
             Hang tight while the AI works its magic...
           </p>

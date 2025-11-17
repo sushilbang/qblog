@@ -8,10 +8,12 @@ import { BlogEditor } from '@/components/BlogEditor'
 import { BlogFooter } from '@/components/BlogFooter'
 import { FunFactLoader } from '@/components/FunFactLoader'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
-import { ArrowLeft, Loader, Edit2 } from 'lucide-react'
+import { ArrowLeft, Loader, Edit2, Users } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { getAuth } from 'firebase/auth'
 import { useAuth } from '@/app/auth-context'
+import { RoomShareDialog } from '@/components/RoomShareDialog'
 
 interface Blog {
   id: string
@@ -34,6 +36,7 @@ interface BlogDetailPageProps {
 
 export default function BlogDetailPage({ params }: BlogDetailPageProps) {
   const { user } = useAuth()
+  const router = useRouter()
   const [blog, setBlog] = useState<Blog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isGenerating, setIsGenerating] = useState(true)
@@ -44,6 +47,9 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [isRegeneratingImage, setIsRegeneratingImage] = useState(false)
+  const [showRoomDialog, setShowRoomDialog] = useState(false)
+  const [roomLink, setRoomLink] = useState<string | null>(null)
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false)
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null
@@ -197,6 +203,27 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
     }
   }
 
+  const createCollaborativeRoom = async () => {
+    if (!blog) return
+    setIsCreatingRoom(true)
+    try {
+      const response = await fetch(`/api/rooms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blogId: blog.id })
+      })
+      if (!response.ok) throw new Error('Failed to create room')
+      const { roomId } = await response.json()
+      const shareLink = `${window.location.origin}/collaborate/${roomId}?blogId=${blog.id}`
+      setRoomLink(shareLink)
+      setShowRoomDialog(true)
+    } catch (err) {
+      console.error('Failed to create room:', err)
+    } finally {
+      setIsCreatingRoom(false)
+    }
+  }
+
   // Show editor mode
   if (isEditMode && blog) {
     return (
@@ -292,13 +319,21 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
 
           {/* Edit Button - only show if user is the blog owner */}
           {user && blog.userId === user.id && (
-            <div className="mb-8 flex justify-end">
+            <div className="mb-8 flex gap-2 justify-end">
               <button
                 onClick={startEdit}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[var(--bg-2)] text-[var(--fg-1)] hover:bg-[var(--bg-3)] transition-colors"
               >
                 <Edit2 className="w-4 h-4" />
                 Edit
+              </button>
+              <button
+                onClick={createCollaborativeRoom}
+                disabled={isCreatingRoom}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[var(--bg-2)] text-[var(--fg-1)] hover:bg-[var(--bg-3)] transition-colors disabled:opacity-50"
+              >
+                <Users className="w-4 h-4" />
+                {isCreatingRoom ? 'Creating...' : 'Collaborate'}
               </button>
             </div>
           )}
@@ -312,6 +347,13 @@ export default function BlogDetailPage({ params }: BlogDetailPageProps) {
 
       {/* Footer */}
       <BlogFooter />
+
+      {/* Room Share Dialog */}
+      <RoomShareDialog
+        isOpen={showRoomDialog}
+        roomLink={roomLink}
+        onClose={() => setShowRoomDialog(false)}
+      />
     </main>
   )
 }
